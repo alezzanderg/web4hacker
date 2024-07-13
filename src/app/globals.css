@@ -7,3 +7,21 @@ body {
   background-repeat: repeat;
   background-size: 100px;
 }
+
+/* styles/globals.css */
+.marquee {
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  white-space: nowrap;
+}
+
+.track {
+  display: flex;
+  animation: marquee 55s linear infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}

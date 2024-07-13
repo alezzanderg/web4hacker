@@ -1,54 +1,85 @@
-// src/components/Marquee.tsx
 "use client"
-// components/NewsMarquee.tsx
+// src/components/Marquee.tsx
 import React, { useEffect, useState } from 'react';
 
-interface NewsItem {
+interface Article {
   title: string;
-  url: string;
 }
 
-const NewsMarquee: React.FC = () => {
-  const [news, setNews] = useState<NewsItem[]>([]);
+const Marquee: React.FC = () => {
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const apiKey = '70cf179a0da22157dceeecde9407ae63'; // Reemplaza con tu API Key
+  const url = `https://gnews.io/api/v4/search?q=hacking&token=${apiKey}`;
 
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await fetch(
-          'https://newsapi.org/v2/everything?q=hacking&apiKey=7071f43fc95245aa9de4ca578d64874a'
-        );
-        const data = await response.json();
-        if (data.articles) {
-          setNews(data.articles.slice(0, 10).map((article: any) => ({
-            title: article.title,
-            url: article.url,
-          })));
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error('Error en la respuesta de la API');
         }
-      } catch (error) {
-        console.error('Error fetching news:', error);
+        const data = await response.json();
+        if (!data.articles) {
+          throw new Error('No se encontraron artículos');
+        }
+        setArticles(data.articles);
+        localStorage.setItem('articles', JSON.stringify(data.articles));
+        localStorage.setItem('lastFetch', new Date().toISOString());
+        setLoading(false);
+      } catch (error: any) {
+        console.error('Error al obtener noticias:', error);
+        setError(error.message);
+        setLoading(false);
       }
     };
 
+    const storedArticles = localStorage.getItem('articles');
+    const lastFetch = localStorage.getItem('lastFetch');
+    const now = new Date();
+
+    if (storedArticles && lastFetch) {
+      const lastFetchDate = new Date(lastFetch);
+      const oneDay = 24 * 60 * 60 * 1000;
+      if (now.getTime() - lastFetchDate.getTime() < oneDay) {
+        setArticles(JSON.parse(storedArticles));
+        setLoading(false);
+        return;
+      }
+    }
+
     fetchNews();
-  }, []);
+  }, [url]);
 
   return (
-    <div className="bg-gray-800 py-2 overflow-hidden">
-      <div className="flex animate-marquee whitespace-nowrap">
-        {news.map((item, index) => (
-          
-            key={index}
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white mx-4 hover:text-green-500"
-          >
-            {item.title}
-          </a>
-        ))}
+    <div className="overflow-hidden bg-green-500 text-black py-1">
+      <div className="marquee">
+        {loading ? (
+          <span>Cargando noticias...</span>
+        ) : error ? (
+          <span>{error}</span>
+        ) : (
+          <>
+            <div className="track">
+              {articles.map((article, index) => (
+                <span key={index} className="mx-4">
+                  {article.title}
+                </span>
+              ))}
+            </div>
+            <div className="track">
+              {articles.map((article, index) => (
+                <span key={`repeat-${index}`} className="mx-4">
+                  {article.title}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 };
 
-export default NewsMarquee;
+export default Marquee;
